@@ -1,11 +1,3 @@
-search	      replace	    apariciones
-<![CDATA[	    ///	            365
-]]>          	XXX	            365
-dc:	            ddd	            28
-wp:	             ppp	        862
-content:	    ccc	           28
-excerpt:	    eee	           28
-
 ![image](https://github.com/JulietaRiv/migration-debel/assets/54114039/9bf74d55-cf52-4758-b384-9bcee9325db2)
 
 
