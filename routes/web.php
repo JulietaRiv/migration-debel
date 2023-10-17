@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\Storage;
 use JMS\Serializer\SerializerBuilder;
 use MyNamespace\MyObject;
 use Orchestra\Parser\Xml\Facade as XmlParser;
-use RecursiveIteratorIterator;
-use SimpleXMLIterator;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,7 +19,7 @@ use SimpleXMLIterator;
 | contains the "web" middleware group. Now create something great!
 |
 */
-
+/*
 Route::get('/importFromOriginalSite', function () {
 
     //testing destiny connection
@@ -145,9 +143,10 @@ Route::get('/importFromOriginalSite', function () {
     }
 
     return view('welcome');
-});
+});*/
 
 Route::get('/newImportprocess', function () {
+    //post_name = post_id (para encontrar el id de la que sera la feature image de cada uno)
     $thumbnails_ids = [
         //0
          'dibujos__casa-indihar_1920' => 10372,
@@ -638,10 +637,10 @@ Route::get('/newImportprocess', function () {
     $path = storage_path('app/public/xmls/jacquesbedel.test2 copy.xml');
     $target = storage_path('app/public/xmls/nuevo.xml');
     $object = simplexml_load_file($path);
+    //dd($object);
     //$namespaces = $object->getNamespaces(true);
-    //dd($namespaces);  simpleXmlIterator
-   // dd($object);
-    $items = [
+    //armo array con los portfolios originales ya que no es iterable en el objeto
+    $portfolios = [
         $object->channel->item[0],
         $object->channel->item[1],
         $object->channel->item[2],
@@ -659,14 +658,13 @@ Route::get('/newImportprocess', function () {
     ];
     
     $portfolios_ids = 1000;
-    $countItems = 0;
     $portfoliosNuevos = [];
     $galerias = [];
- // $portfoliosOriginales = $items;
     $thumbnailsNames = [];
 
-    foreach ($items as $i => $portfolio){
-            foreach ($portfolio->ppppostmeta as $meta){
+    foreach ($portfolios as $i => $portfolio){
+        $postmetas = $portfolio->ppppostmeta;
+            foreach ($postmetas as $meta){
                 if ($meta->pppmeta_key == "///_portfolio_settingsXXX"){
                     $string = $meta->pppmeta_value->__toString();
                     //limpio "///" del comienzo y "XXX" del final
@@ -764,7 +762,7 @@ Route::get('/newImportprocess', function () {
                     $galerias[$i]['items'] = $items;
                     $galerias[$i]['items_thumbnail'] = $items_thumbnail;
                     $galerias[$i]['items_name'] = $items_name;
-                    
+                    //armo los portfolio settins que seran serializados de nuevo
                     foreach ($galeryNames as $galeryName){
                         $galerias[$i][$galeryName]['portfolio_settings'] = [
                             "layout" => "content-full-width",
@@ -780,11 +778,42 @@ Route::get('/newImportprocess', function () {
                         $visibleName = str_replace('-', ' ', $galeryName);
                         $upperName = ucfirst($visibleName);
                         $thumbnailId = $thumbnails_ids[$items_name[$galeryName][0]];
+
+                        //creo los nuevos items (portfolios) ya en el objeto
+                        $itemchild = $object->channel->addChild('item');
+                        $itemchild->title = '///' . $upperName . 'XXX';
+                        $itemchild->link = 'https://test2.jacquesbedel.com/dt_portfolios/' . $galeryName . '/';
+                        $itemchild->pubDate = "Wed, 21 Jun 2023 20:19:14 +0000";
+                        $itemchild->dddcreator = "///adminXXX";
+                        $itemchild->guid = "https://test2.jacquesbedel.com/?post_type=dt_portfolios&p=" . $post_id;
+                        $itemchild->description = new SimpleXmlElement('<description nicename="algo">///XXX</description>');
+                        $itemchild->cccencoded = '///XXX';
+                        $itemchild->eeeencoded = '///XXX';
+                        $itemchild->ppppost_id = $post_id;
+                        $itemchild->ppppost_date = "///2023-06-21 17:19:14XXX";
+                        $itemchild->ppppost_date_gmt = "///2023-06-21 20:19:14XXX";
+                        $itemchild->ppppost_modified = "///2023-08-12 07:26:26XXX";
+                        $itemchild->ppppost_modified_gmt = "///2023-08-12 10:26:26XXX";
+                        $itemchild->pppcomment_status = "///closedXXX";
+                        $itemchild->pppping_status = "///closedXXX";
+                        $itemchild->ppppost_name = '///' . $galeryName . 'XXX';
+                        $itemchild->pppstatus = "///publishXXX";
+                        $itemchild->ppppost_parent = "0";
+                        $itemchild->pppmenu_order = "0";
+                        $itemchild->ppppost_type = "///dt_portfoliosXXX";
+                        $itemchild->ppppost_password = "///XXX";
+                        $itemchild->pppis_sticky = "0";
+                        
                         //category
-                        $category = new SimpleXmlElement('<category></category>');
-                        $childCategory = $category->addChild('category');
-                        $childCategory->addChild('category', $portfolio->category->__toString());
-                        $childCategory->addChild('category', $portfolio->title->__toString());
+                        $cat_nicename = lcfirst(substr($portfolio->category->__toString(), 3, -3));
+                        $category = $itemchild->addChild('category', $portfolio->category->__toString());
+                        $category->addAttribute('domain', "portfolio_entries");
+                        $category->addAttribute('nicename', $cat_nicename);
+                        $subcategoryString = substr($portfolio->title->__toString(), 3, -3);
+                        $subcat_nicename = lcfirst($subcategoryString);
+                        $subcategory = $itemchild->addChild('category', $subcategoryString);
+                        $subcategory->addAttribute('domain', "portfolio_entries");
+                        $subcategory->addAttribute('nicename', $subcat_nicename);
 
                         //postmeta
                         $metas = [
@@ -809,61 +838,27 @@ Route::get('/newImportprocess', function () {
                                 "pppmeta_value" => "///proposing-love-2XXX"
                             ]
                         ];
-
-                        $postmeta = new SimpleXmlElement('<postmeta></postmeta>');
-                        foreach ($metas as $meta){
-                            $meta = $postmeta->addChild('item');
-                            $meta->addChild('pppmeta_key', $meta['pppmeta_key']);
-                            $meta->addChild('pppmeta_value', $meta['pppmeta_value']);
+                        foreach ($metas as $i => $meta){
+                            $postmeta = $itemchild->addChild('postmeta');
+                            $postmeta->addChild('pppmeta_key', $metas[$i]['pppmeta_key']);
+                            $postmeta->addChild('pppmeta_value', $metas[$i]['pppmeta_value']);
                         }
-                        //dd($meta);
-                        
-                        $vuelta = $countItems++;
-                        $object->channel->item[$vuelta]['title'] = '///' . $upperName . 'XXX';
-                        $object->channel->item[$vuelta]['link'] = 'https://test2.jacquesbedel.com/dt_portfolios/' . $galeryName . '/';
-                        $object->channel->item[$vuelta]['pubDate'] = "Wed, 21 Jun 2023 20:19:14 +0000";
-                        $object->channel->item[$vuelta]['dddcreator'] = "///adminXXX";
-                        $object->channel->item[$vuelta]['guid'] = "https://test2.jacquesbedel.com/?post_type=dt_portfolios&p=" . $post_id;
-                        $object->channel->item[$vuelta]['description'] = new SimpleXmlElement('<postmeta></postmeta>');
-                        $object->channel->item[$vuelta]['cccencoded'] = '///XXX';
-                        $object->channel->item[$vuelta]['eeeencoded'] = '///XXX';
-                        $object->channel->item[$vuelta]['ppppost_id'] = $post_id;
-                        $object->channel->item[$vuelta]['ppppost_date'] = "///2023-06-21 17:19:14XXX";
-                        $object->channel->item[$vuelta]['ppppost_date_gmt'] = "///2023-06-21 20:19:14XXX";
-                        $object->channel->item[$vuelta]['ppppost_modified'] = "///2023-08-12 07:26:26XXX";
-                        $object->channel->item[$vuelta]['ppppost_modified_gmt'] = "///2023-08-12 10:26:26XXX";
-                        $object->channel->item[$vuelta]['pppcomment_status'] = "///closedXXX";
-                        $object->channel->item[$vuelta]['pppping_status'] = "///closedXXX";
-                        $object->channel->item[$vuelta]['ppppost_name'] = '///' . $galeryName . 'XXX';
-                        $object->channel->item[$vuelta]['pppstatus'] = "///publishXXX";
-                        $object->channel->item[$vuelta]['ppppost_parent'] = "0";
-                        $object->channel->item[$vuelta]['pppmenu_order'] = "0";
-                        $object->channel->item[$vuelta]['ppppost_type'] = "///dt_portfoliosXXX";
-                        $object->channel->item[$vuelta]['ppppost_password'] = "///XXX";
-                        $object->channel->item[$vuelta]['pppis_sticky'] = "0";
-                       // $object->channel->item[$countItems++]['category'] = $childCategory;
-                       // $object->channel->item[$countItems++]['ppppostmeta'] = $postmeta;
-                        //$object->channel->addAttribute('item', $new->__toString());
-                     //   dd($object);
 
-                        $categoryClean = substr($portfolio->category->__toString(), 3, -3);
-                        $subcategoryClean = substr($portfolio->title->__toString(), 3, -3);
-                      //  $portfoliosNuevos[$categoryClean][$subcategoryClean][] = $new;
+                        //$categoryClean = substr($portfolio->category->__toString(), 3, -3);
+                        //$subcategoryClean = substr($portfolio->title->__toString(), 3, -3);
+                        //$portfoliosNuevos[$categoryClean][$subcategoryClean][] = $object->channel->item[$vuelta];
                     }
                 }
             }
-        }
-            dd($object);
-        $portfoliosNotNested = [];
-        foreach ($portfoliosNuevos as $categories){
-            foreach ($categories as $subcategories){
-                foreach ($subcategories as $gallery){
-                    $portfoliosNotNested[] = $gallery;
-                }
-            }
-        }
+        
+    }
+    
+    //elimino los primeros 14 items (portfolios originales)
+    for ($x = 0; $x < 14; $x++){
+       unset($object->channel->item[0]);
+    } 
+  //  dd($object);
 
-        //dd($object);
     //Guardo el archivo nuevo
     $object->asXML($target);
 });
@@ -872,7 +867,7 @@ Route::get('/newImportprocess', function () {
 Route::get('/testingFile', function () {
 
     $path = storage_path('app/public/xmls/jacquesbedel.test5 copy.xml');
-   // $path = storage_path('app/public/xmls/jacquesbedel.test5.xml');
+ //   $path = storage_path('app/public/xmls/jacquesbedel.test5.xml');
     $object = simplexml_load_file($path);
     dd($object);
 
