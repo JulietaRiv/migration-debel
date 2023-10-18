@@ -146,6 +146,7 @@ Route::get('/importFromOriginalSite', function () {
 });*/
 
 Route::get('/newImportprocess', function () {
+ //   dd('mierda');
     //post_name = post_id (para encontrar el id de la que sera la feature image de cada uno)
     $thumbnails_ids = [
         //0
@@ -634,10 +635,71 @@ Route::get('/newImportprocess', function () {
         "sony-dsc-35" => 10741,
     ];
     //count($thumbnails_ids) = 469 
+  //  $thumbnails_ids = [
+  //      'equipamiento__cama_1222' => 10394,
+  //       'equipamiento__candelabro_1218' => 10395,
+  //       'equipamiento__mesa-comedor_1227' => 10390,
+  //       'equipamiento__mesa-living_1228' => 10389,
+  //       'equipamiento__silla-en-metal_1224' => 10393,
+  //       'equipamiento__lampara_1215' => 10398,
+  //       'equipamiento__silla_1213' => 10399,
+  //  ];
+
+
+    $aditional_fields = [];
+    foreach ($thumbnails_ids as $name => $thumbnail_id){
+        //connection to test2
+        $postmetas = DB::connection('mysql')->table('wp_postmeta')->where('post_id', $thumbnail_id)->get();
+        $fields = [
+            '_wp_attached_file', 'numero_registro', 'clase', 'lugar', 'serie', 'fecha_inicio', 'fecha_fin', 'dimensiones', 'tecnica', 'ediciones', 'nombre'
+        ];
+        
+        foreach ($postmetas as $postmeta){
+            if ($postmeta->meta_key == '_wp_attached_file'){
+                $aditional_fields[$thumbnail_id]['_wp_attached_file'] = $postmeta->meta_value ?? ''; 
+            } 
+            if ($postmeta->meta_key == 'numero_registro'){
+                $aditional_fields[$thumbnail_id]['numero_registro'] = $postmeta->meta_value ?? ''; 
+            } 
+            if ($postmeta->meta_key == 'clase'){
+                $aditional_fields[$thumbnail_id]['clase'] = $postmeta->meta_value ?? ''; 
+            } 
+            if ($postmeta->meta_key == 'lugar'){
+                $aditional_fields[$thumbnail_id]['lugar'] = $postmeta->meta_value ?? ''; 
+            } 
+            if ($postmeta->meta_key == 'serie'){
+                $aditional_fields[$thumbnail_id]['serie'] = $postmeta->meta_value ?? ''; 
+            } 
+            if ($postmeta->meta_key == 'fecha_inicio'){
+                $aditional_fields[$thumbnail_id]['fecha_inicio'] = $postmeta->meta_value ?? ''; 
+            } 
+            if ($postmeta->meta_key == 'fecha_fin'){
+                $aditional_fields[$thumbnail_id]['fecha_fin'] = $postmeta->meta_value ?? ''; 
+            } 
+            if ($postmeta->meta_key == 'dimensiones'){
+                $aditional_fields[$thumbnail_id]['dimensiones'] = $postmeta->meta_value ?? ''; 
+            } 
+            if ($postmeta->meta_key =='tecnica'){
+                $aditional_fields[$thumbnail_id]['tecnica'] = $postmeta->meta_value ?? ''; 
+            } 
+            if ($postmeta->meta_key == 'ediciones'){
+                $aditional_fields[$thumbnail_id]['ediciones'] = $postmeta->meta_value ?? ''; 
+            } 
+            if ($postmeta->meta_key == 'nombre'){
+                $aditional_fields[$thumbnail_id]['nombre'] = $postmeta->meta_value ?? ''; 
+            } 
+        }
+        foreach ($fields as $field){
+            if (!in_array($field, array_keys($aditional_fields[$thumbnail_id]))){
+                $aditional_fields[$thumbnail_id][$field] = ''; 
+            }
+        }
+    }
+    
     $path = storage_path('app/public/xmls/jacquesbedel.test2 copy.xml');
     $target = storage_path('app/public/xmls/nuevo.xml');
     $object = simplexml_load_file($path);
-    //dd($object);
+
     //$namespaces = $object->getNamespaces(true);
     //armo array con los portfolios originales ya que no es iterable en el objeto
     $portfolios = [
@@ -662,7 +724,7 @@ Route::get('/newImportprocess', function () {
     $galerias = [];
     $thumbnailsNames = [];
 
-    foreach ($portfolios as $i => $portfolio){
+    foreach ($portfolios as $i => $portfolio){    
         $postmetas = $portfolio->ppppostmeta;
             foreach ($postmetas as $meta){
                 if ($meta->pppmeta_key == "///_portfolio_settingsXXX"){
@@ -670,7 +732,7 @@ Route::get('/newImportprocess', function () {
                     //limpio "///" del comienzo y "XXX" del final
                     $clean = substr($string, 3, -3);
                     $deserializado = unserialize($clean);
-                                     
+
                     $items = [];
                     foreach ($deserializado['items'] as $item){
                         $key1 = explode('__', $item);
@@ -764,15 +826,50 @@ Route::get('/newImportprocess', function () {
                     $galerias[$i]['items_name'] = $items_name;
                     //armo los portfolio settins que seran serializados de nuevo
                     foreach ($galeryNames as $galeryName){
+                        $thumbnailId = $thumbnails_ids[$items_name[$galeryName][0]];
+
                         $galerias[$i][$galeryName]['portfolio_settings'] = [
                             "layout" => "content-full-width",
                             "portfolio-layout" => "full-width-portfolio",
                             "portfolio-slider" => "true",
                             "items" => $items[$galeryName],
                             "items_thumbnail" => $items_thumbnail[$galeryName],
-                            "items_name" => $items_name[$galeryName]
+                            "items_name" => $items_name[$galeryName],
+                            "meta_title" => [
+                                "numero-registro" => "Número Registro",
+                                "serie" => "Serie",
+                                "clase" => "Clase",
+                                "lugar" => "Lugar",
+                                "fecha-inicio" => "Fecha Inicio",
+                                "fecha-fin" => "Fecha Fin",
+                                "dimensiones" => "Dimensiones",
+                                "tecnica" => "Técnica",
+                                "ediciones" => "Ediciones"
+                            ],
+                            "meta_class" => [
+                                "número-registro" => "fa fa-cab",
+                                "serie" => "fa fa-mortar-board",
+                                "clase" => "fa fa-pencil",
+                                "lugar" => "fa fa-map-marker",
+                                "fecha-inicio" => "fa fa-pencil",
+                                "fecha-fin" => "fa fa-pencil",
+                                "dimensiones" => "fa fa-pencil",
+                                "técnica" => "fa fa-pencil",
+                                "ediciones" => "fa fa-pencil"
+                            ],
+                            "meta_value" =>  [
+                                "número-registro" => $aditional_fields[$thumbnail_id]['numero_registro'],
+                                "serie" => $aditional_fields[$thumbnail_id]['serie'],
+                                "clase" => $aditional_fields[$thumbnail_id]['clase'],
+                                "lugar" => $aditional_fields[$thumbnail_id]['lugar'],
+                                "fecha-inicio" => $aditional_fields[$thumbnail_id]['fecha_inicio'],
+                                "fecha-fin" => $aditional_fields[$thumbnail_id]['fecha_fin'],
+                                "dimensiones" => $aditional_fields[$thumbnail_id]['dimensiones'],
+                                "técnica" => $aditional_fields[$thumbnail_id]['tecnica'],
+                                "ediciones" => $aditional_fields[$thumbnail_id]['ediciones'],
+                            ]
                         ]; 
-                        $thumbnailsNames[] = $items_name[$galeryName][0];
+                        
                         $serializado = serialize($galerias[$i][$galeryName]['portfolio_settings']);
                         $post_id = $portfolios_ids ++;
                         $visibleName = str_replace('-', ' ', $galeryName);
@@ -786,7 +883,7 @@ Route::get('/newImportprocess', function () {
                         $itemchild->pubDate = "Wed, 21 Jun 2023 20:19:14 +0000";
                         $itemchild->dddcreator = "///adminXXX";
                         $itemchild->guid = "https://test2.jacquesbedel.com/?post_type=dt_portfolios&p=" . $post_id;
-                        $itemchild->description = new SimpleXmlElement('<description nicename="algo">///XXX</description>');
+                        $itemchild->description = new SimpleXmlElement('<description>///XXX</description>');
                         $itemchild->cccencoded = '///XXX';
                         $itemchild->eeeencoded = '///XXX';
                         $itemchild->ppppost_id = $post_id;
@@ -844,20 +941,20 @@ Route::get('/newImportprocess', function () {
                             $postmeta->addChild('pppmeta_value', $metas[$i]['pppmeta_value']);
                         }
 
-                        //$categoryClean = substr($portfolio->category->__toString(), 3, -3);
-                        //$subcategoryClean = substr($portfolio->title->__toString(), 3, -3);
-                        //$portfoliosNuevos[$categoryClean][$subcategoryClean][] = $object->channel->item[$vuelta];
+                        $categoryClean = substr($portfolio->category->__toString(), 3, -3);
+                        $subcategoryClean = substr($portfolio->title->__toString(), 3, -3);
+                        $portfoliosNuevos[$categoryClean][$subcategoryClean][] = $itemchild;
                     }
                 }
             }
-        
     }
     
     //elimino los primeros 14 items (portfolios originales)
     for ($x = 0; $x < 14; $x++){
        unset($object->channel->item[0]);
     } 
-  //  dd($object);
+    //dd($portfoliosNuevos);
+   // dd($object);
 
     //Guardo el archivo nuevo
     $object->asXML($target);
@@ -869,6 +966,10 @@ Route::get('/testingFile', function () {
     $path = storage_path('app/public/xmls/jacquesbedel.test5 copy.xml');
  //   $path = storage_path('app/public/xmls/jacquesbedel.test5.xml');
     $object = simplexml_load_file($path);
-    dd($object);
+    //item 3
+    $item3 = $object->channel->item[2];
+    //dd(substr($item3->ppppostmeta[1]->pppmeta_value, 3, -3));
+    $deserializado = unserialize(substr($item3->ppppostmeta[1]->pppmeta_value, 3, -3));
+    dd($deserializado);
 
 });
