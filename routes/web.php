@@ -146,7 +146,7 @@ Route::get('/importFromOriginalSite', function () {
 });*/
 
 Route::get('/newImportprocess', function () {
- //   dd('mierda');
+    //dd('149');
     //post_name = post_id (para encontrar el id de la que sera la feature image de cada uno)
     $thumbnails_ids = [
         //0
@@ -635,25 +635,16 @@ Route::get('/newImportprocess', function () {
         "sony-dsc-35" => 10741,
     ];
     //count($thumbnails_ids) = 469 
-  //  $thumbnails_ids = [
-  //      'equipamiento__cama_1222' => 10394,
-  //       'equipamiento__candelabro_1218' => 10395,
-  //       'equipamiento__mesa-comedor_1227' => 10390,
-  //       'equipamiento__mesa-living_1228' => 10389,
-  //       'equipamiento__silla-en-metal_1224' => 10393,
-  //       'equipamiento__lampara_1215' => 10398,
-  //       'equipamiento__silla_1213' => 10399,
-  //  ];
-
 
     $aditional_fields = [];
     foreach ($thumbnails_ids as $name => $thumbnail_id){
         //connection to test2
         $postmetas = DB::connection('mysql')->table('wp_postmeta')->where('post_id', $thumbnail_id)->get();
+
         $fields = [
             '_wp_attached_file', 'numero_registro', 'clase', 'lugar', 'serie', 'fecha_inicio', 'fecha_fin', 'dimensiones', 'tecnica', 'ediciones', 'nombre'
         ];
-        
+
         foreach ($postmetas as $postmeta){
             if ($postmeta->meta_key == '_wp_attached_file'){
                 $aditional_fields[$thumbnail_id]['_wp_attached_file'] = $postmeta->meta_value ?? ''; 
@@ -689,6 +680,7 @@ Route::get('/newImportprocess', function () {
                 $aditional_fields[$thumbnail_id]['nombre'] = $postmeta->meta_value ?? ''; 
             } 
         }
+        
         foreach ($fields as $field){
             if (!in_array($field, array_keys($aditional_fields[$thumbnail_id]))){
                 $aditional_fields[$thumbnail_id][$field] = ''; 
@@ -738,12 +730,13 @@ Route::get('/newImportprocess', function () {
                         $key1 = explode('__', $item);
                         $key = explode('_', $key1[1]);
                         $obraName = $key[0];
-                        if (!isset($obras[$obraName])){
+                        if (!isset($items[$obraName])){
                             $items[$obraName] = [$item];
                         } else {
                             $items[$obraName][] = $item;
                         }
                     }
+
                     $items_thumbnail = [];
                     foreach ($deserializado['items_thumbnail'] as $item_thumbnail){
                         $key1 = explode('__', $item_thumbnail);
@@ -755,6 +748,7 @@ Route::get('/newImportprocess', function () {
                             $items_thumbnail[$obraName][] = $item_thumbnail;
                         }
                     }
+
                     $items_name = [];
                     foreach ($deserializado['items_name'] as $item_name){
                         $key1 = explode('__', $item_name);
@@ -768,6 +762,7 @@ Route::get('/newImportprocess', function () {
                             $items_name[$obraName][] = $item_name;
                         }
                     }
+                    
                     //excepciones x obras mal nombradas
                     $galeryNames = array_keys($items);
                     foreach ($galeryNames as $galeryName){
@@ -847,25 +842,25 @@ Route::get('/newImportprocess', function () {
                                 "ediciones" => "Ediciones"
                             ],
                             "meta_class" => [
-                                "número-registro" => "fa fa-cab",
+                                "numero-registro" => "fa fa-cab",
                                 "serie" => "fa fa-mortar-board",
                                 "clase" => "fa fa-pencil",
                                 "lugar" => "fa fa-map-marker",
                                 "fecha-inicio" => "fa fa-pencil",
                                 "fecha-fin" => "fa fa-pencil",
                                 "dimensiones" => "fa fa-pencil",
-                                "técnica" => "fa fa-pencil",
+                                "tecnica" => "fa fa-pencil",
                                 "ediciones" => "fa fa-pencil"
                             ],
                             "meta_value" =>  [
-                                "número-registro" => $aditional_fields[$thumbnail_id]['numero_registro'],
+                                "numero-registro" => $aditional_fields[$thumbnail_id]['numero_registro'],
                                 "serie" => $aditional_fields[$thumbnail_id]['serie'],
                                 "clase" => $aditional_fields[$thumbnail_id]['clase'],
                                 "lugar" => $aditional_fields[$thumbnail_id]['lugar'],
                                 "fecha-inicio" => $aditional_fields[$thumbnail_id]['fecha_inicio'],
                                 "fecha-fin" => $aditional_fields[$thumbnail_id]['fecha_fin'],
                                 "dimensiones" => $aditional_fields[$thumbnail_id]['dimensiones'],
-                                "técnica" => $aditional_fields[$thumbnail_id]['tecnica'],
+                                "tecnica" => $aditional_fields[$thumbnail_id]['tecnica'],
                                 "ediciones" => $aditional_fields[$thumbnail_id]['ediciones'],
                             ]
                         ]; 
@@ -908,7 +903,8 @@ Route::get('/newImportprocess', function () {
                         $category->addAttribute('nicename', $cat_nicename);
                         $subcategoryString = substr($portfolio->title->__toString(), 3, -3);
                         $subcat_nicename = lcfirst($subcategoryString);
-                        $subcategory = $itemchild->addChild('category', $subcategoryString);
+                        $subcategoryString2 = '///' . $subcategoryString . 'XXX';
+                        $subcategory = $itemchild->addChild('category', $subcategoryString2);
                         $subcategory->addAttribute('domain', "portfolio_entries");
                         $subcategory->addAttribute('nicename', $subcat_nicename);
 
@@ -936,7 +932,7 @@ Route::get('/newImportprocess', function () {
                             ]
                         ];
                         foreach ($metas as $i => $meta){
-                            $postmeta = $itemchild->addChild('postmeta');
+                            $postmeta = $itemchild->addChild('ppppostmeta');
                             $postmeta->addChild('pppmeta_key', $metas[$i]['pppmeta_key']);
                             $postmeta->addChild('pppmeta_value', $metas[$i]['pppmeta_value']);
                         }
@@ -963,13 +959,16 @@ Route::get('/newImportprocess', function () {
 
 Route::get('/testingFile', function () {
 
-    $path = storage_path('app/public/xmls/jacquesbedel.test5 copy.xml');
+  //  $path = storage_path('app/public/xmls/jacquesbedel.test5 copy.xml');
  //   $path = storage_path('app/public/xmls/jacquesbedel.test5.xml');
-    $object = simplexml_load_file($path);
+ 
+ //   $object = simplexml_load_file($path);
     //item 3
-    $item3 = $object->channel->item[2];
+   // $item3 = $object->channel->item[2];
     //dd(substr($item3->ppppostmeta[1]->pppmeta_value, 3, -3));
-    $deserializado = unserialize(substr($item3->ppppostmeta[1]->pppmeta_value, 3, -3));
-    dd($deserializado);
+   // $deserializado = unserialize(substr($item3->ppppostmeta[1]->pppmeta_value, 3, -3));
+  
+
+    //dd($deserializado);
 
 });
