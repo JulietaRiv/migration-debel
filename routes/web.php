@@ -146,7 +146,7 @@ Route::get('/importFromOriginalSite', function () {
 });*/
 
 Route::get('/newImportprocess', function () {
-    //dd('149');
+    
     //post_name = post_id (para encontrar el id de la que sera la feature image de cada uno)
     $thumbnails_ids = [
         //0
