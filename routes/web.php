@@ -1462,3 +1462,71 @@ Route::get('/mediaFile', function () {
     $object->asXML($destiny);
 
 });
+
+
+Route::get('/script3', function () {
+    $path = storage_path('app/public/script3/3importConIDS-sinCracEspeciales.xml');
+    $target = storage_path('app/public/script3/script3.xml');
+    $object = simplexml_load_file($path);
+
+    $fields = [
+        "numero-registro" => "Número Registro",
+        "serie" => "Serie",
+        "clase" => "Clase",
+        "lugar" => "Lugar",
+        "fecha-inicio" => "Fecha Inicio",
+        "fecha-fin" => "Fecha Fin",
+        "dimensiones" => "Dimensiones",
+        "tecnica" => "Técnica",
+        "ediciones" => "Ediciones"
+    ];
+
+    //dd($object);
+    $portfolios = [];
+    for($x=0; $x<170; $x++){
+        $portfolios[] = $object->channel->item[$x];
+    }
+
+    //dd($portfolios);
+    foreach ($portfolios as $i => $portfolio){    
+        $settings = $portfolio->ppppostmeta[1];
+
+        if ($settings->pppmeta_key == "///_portfolio_settingsXXX"){
+            $string = $settings->pppmeta_value->__toString();
+            //limpio "///" del comienzo y "XXX" del final
+            $clean = substr($string, 3, -3);
+            $deserializado = unserialize($clean);
+
+            $newMetaValue = [];
+            $newMetaTitle = [];
+            $newMetaClass = [];
+            //si un campo esta vacío no lo incluyo en array
+            foreach($deserializado['meta_value'] as $field => $value){
+                if ($value != ''){
+                    $newMetaValue[$field] = $value;
+                }
+            }
+            //x cada campo incluido, incluyo su titulo (mayus) y la clase para mostrar el titulo
+            foreach($newMetaValue as $field => $value){
+                $newMetaTitle[$field] = $fields[$field];
+                $newMetaClass[$field] = 'fa-' . $field;
+            }
+            $deserializado["meta_value"] = $newMetaValue;
+            $deserializado["meta_title"] = $newMetaTitle;
+            $deserializado["meta_class"] = $newMetaClass;
+            
+            $serializado = serialize($deserializado);
+            $meta = [
+                "pppmeta_key" => "///_portfolio_settingsXXX",
+                "pppmeta_value" => "///" . $serializado . "XXX"
+            ];
+            unset($portfolio->ppppostmeta[1]);
+            $postmeta = $portfolio->addChild('ppppostmeta');
+            $postmeta->addChild('pppmeta_key', $meta['pppmeta_key']);
+            $postmeta->addChild('pppmeta_value', $meta['pppmeta_value']);
+        }
+        dd($portfolio, $serializado, $deserializado);
+    }
+    //Guardo el archivo nuevo
+    $object->asXML($target);
+});
