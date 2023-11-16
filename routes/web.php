@@ -640,7 +640,7 @@ Route::get('/newImportprocess', function () {
     foreach ($thumbnails_ids as $name => $thumbnail_id){
         //connection to test2
         $postmetas = DB::connection('mysql')->table('wp_postmeta')->where('post_id', $thumbnail_id)->get();
-
+        
         $fields = [
             '_wp_attached_file', 'numero_registro', 'clase', 'lugar', 'serie', 'fecha_inicio', 'fecha_fin', 'dimensiones', 'tecnica', 'ediciones', 'nombre'
         ];
@@ -687,8 +687,8 @@ Route::get('/newImportprocess', function () {
             }
         }
     }
-    
-    $path = storage_path('app/public/xmls/jacquesbedel.test2 copy.xml');
+
+    $path = storage_path('app/public/xmls/jacquesbedel.test2 copy.xml');    
     $target = storage_path('app/public/xmls/nuevo.xml');
     $object = simplexml_load_file($path);
 
@@ -716,7 +716,7 @@ Route::get('/newImportprocess', function () {
     $galerias = [];
     $thumbnailsNames = [];
 
-    foreach ($portfolios as $i => $portfolio){    
+    foreach ($portfolios as $i => $portfolio){
         $postmetas = $portfolio->ppppostmeta;
             foreach ($postmetas as $meta){
                 if ($meta->pppmeta_key == "///_portfolio_settingsXXX"){
@@ -820,9 +820,9 @@ Route::get('/newImportprocess', function () {
                     $galerias[$i]['items_thumbnail'] = $items_thumbnail;
                     $galerias[$i]['items_name'] = $items_name;
                     //armo los portfolio settins que seran serializados de nuevo
-                    foreach ($galeryNames as $galeryName){
+                    foreach ($galeryNames as $k => $galeryName){
                         $thumbnailId = $thumbnails_ids[$items_name[$galeryName][0]];
-
+                        
                         $galerias[$i][$galeryName]['portfolio_settings'] = [
                             "layout" => "content-full-width",
                             "portfolio-layout" => "with-left-portfolio",
@@ -853,15 +853,15 @@ Route::get('/newImportprocess', function () {
                                 "ediciones" => "fa fa-pencil"
                             ],
                             "meta_value" =>  [
-                                "numero-registro" => $aditional_fields[$thumbnail_id]['numero_registro'],
-                                "serie" => $aditional_fields[$thumbnail_id]['serie'],
-                                "clase" => $aditional_fields[$thumbnail_id]['clase'],
-                                "lugar" => $aditional_fields[$thumbnail_id]['lugar'],
-                                "fecha-inicio" => $aditional_fields[$thumbnail_id]['fecha_inicio'],
-                                "fecha-fin" => $aditional_fields[$thumbnail_id]['fecha_fin'],
-                                "dimensiones" => $aditional_fields[$thumbnail_id]['dimensiones'],
-                                "tecnica" => $aditional_fields[$thumbnail_id]['tecnica'],
-                                "ediciones" => $aditional_fields[$thumbnail_id]['ediciones'],
+                                "numero-registro" => $aditional_fields[$thumbnailId]['numero_registro'],
+                                "serie" => $aditional_fields[$thumbnailId]['serie'],
+                                "clase" => $aditional_fields[$thumbnailId]['clase'],
+                                "lugar" => $aditional_fields[$thumbnailId]['lugar'],
+                                "fecha-inicio" => $aditional_fields[$thumbnailId]['fecha_inicio'],
+                                "fecha-fin" => $aditional_fields[$thumbnailId]['fecha_fin'],
+                                "dimensiones" => $aditional_fields[$thumbnailId]['dimensiones'],
+                                "tecnica" => $aditional_fields[$thumbnailId]['tecnica'],
+                                "ediciones" => $aditional_fields[$thumbnailId]['ediciones'],
                             ]
                         ]; 
                         
@@ -869,7 +869,6 @@ Route::get('/newImportprocess', function () {
                         $post_id = $portfolios_ids ++;
                         $visibleName = str_replace('-', ' ', $galeryName);
                         $upperName = ucfirst($visibleName);
-                        $thumbnailId = $thumbnails_ids[$items_name[$galeryName][0]];
 
                         //creo los nuevos items (portfolios) ya en el objeto
                         $itemchild = $object->channel->addChild('item');
@@ -1483,7 +1482,7 @@ Route::get('/script3', function () {
 
     //dd($object);
     $portfolios = [];
-    for($x=0; $x<170; $x++){
+    for($x=0; $x<470; $x++){
         $portfolios[] = $object->channel->item[$x];
     }
 
@@ -1491,41 +1490,45 @@ Route::get('/script3', function () {
     foreach ($portfolios as $i => $portfolio){    
         $settings = $portfolio->ppppostmeta[1];
 
-        if ($settings->pppmeta_key == "///_portfolio_settingsXXX"){
-            $string = $settings->pppmeta_value->__toString();
-            //limpio "///" del comienzo y "XXX" del final
-            $clean = substr($string, 3, -3);
-            $deserializado = unserialize($clean);
+    //    if ($i == 400){
+            if ($settings->pppmeta_key == "///_portfolio_settingsXXX"){
+                $string = $settings->pppmeta_value->__toString();
+                //limpio "///" del comienzo y "XXX" del final
+                $clean = substr($string, 3, -3);
+                $deserializado = unserialize($clean);
 
-            $newMetaValue = [];
-            $newMetaTitle = [];
-            $newMetaClass = [];
-            //si un campo esta vacío no lo incluyo en array
-            foreach($deserializado['meta_value'] as $field => $value){
-                if ($value != ''){
-                    $newMetaValue[$field] = $value;
+                $newMetaValue = [];
+                $newMetaTitle = [];
+                $newMetaClass = [];
+                //si un campo esta vacío no lo incluyo en array
+                foreach($deserializado['meta_value'] as $field => $value){
+                    if ($value != ''){
+                        $newMetaValue[$field] = $value;
+                    }
                 }
+                //x cada campo incluido, incluyo su titulo (mayus) y la clase para mostrar el titulo
+                foreach($newMetaValue as $field => $value){
+                    $newMetaTitle[$field] = $fields[$field];
+                    $newMetaClass[$field] = 'fa-' . $field;
+                }
+                $deserializado["meta_value"] = $newMetaValue;
+                $deserializado["meta_title"] = $newMetaTitle;
+                $deserializado["meta_class"] = $newMetaClass;
+                
+                $serializado = serialize($deserializado);
+                $meta = [
+                    "pppmeta_key" => "///_portfolio_settingsXXX",
+                    "pppmeta_value" => "///" . $serializado . "XXX"
+                ];
+                unset($portfolio->ppppostmeta[1]);
+                $postmeta = $portfolio->addChild('ppppostmeta');
+                $postmeta->addChild('pppmeta_key', $meta['pppmeta_key']);
+                $postmeta->addChild('pppmeta_value', $meta['pppmeta_value']);
             }
-            //x cada campo incluido, incluyo su titulo (mayus) y la clase para mostrar el titulo
-            foreach($newMetaValue as $field => $value){
-                $newMetaTitle[$field] = $fields[$field];
-                $newMetaClass[$field] = 'fa-' . $field;
-            }
-            $deserializado["meta_value"] = $newMetaValue;
-            $deserializado["meta_title"] = $newMetaTitle;
-            $deserializado["meta_class"] = $newMetaClass;
-            
-            $serializado = serialize($deserializado);
-            $meta = [
-                "pppmeta_key" => "///_portfolio_settingsXXX",
-                "pppmeta_value" => "///" . $serializado . "XXX"
-            ];
-            unset($portfolio->ppppostmeta[1]);
-            $postmeta = $portfolio->addChild('ppppostmeta');
-            $postmeta->addChild('pppmeta_key', $meta['pppmeta_key']);
-            $postmeta->addChild('pppmeta_value', $meta['pppmeta_value']);
-        }
-        dd($portfolio, $serializado, $deserializado);
+     //   }
+       // if ($i == 20){
+       //     dd($portfolio, $serializado, $deserializado);
+       // }
     }
     //Guardo el archivo nuevo
     $object->asXML($target);
