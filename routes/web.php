@@ -860,13 +860,12 @@ Route::get('/newImportprocess', function () {
                                 "fecha-inicio" => $aditional_fields[$thumbnailId]['fecha_inicio'],
                                 "fecha-fin" => $aditional_fields[$thumbnailId]['fecha_fin'],
                                 "dimensiones" => $aditional_fields[$thumbnailId]['dimensiones'],
-                                "tecnica" => $aditional_fields[$thumbnailId]['tecnica'],
-                                "ediciones" => $aditional_fields[$thumbnailId]['ediciones'],
+                                "tecnica" => strip_tags($aditional_fields[$thumbnailId]['tecnica']),
+                                "ediciones" => $aditional_fields[$thumbnailId]['ediciones']
                             ]
                         ]; 
-                        
-                        $serializado = serialize($galerias[$i][$galeryName]['portfolio_settings']);
                         $post_id = $portfolios_ids ++;
+                        $serializado = serialize($galerias[$i][$galeryName]['portfolio_settings']);
                         $visibleName = str_replace('-', ' ', $galeryName);
                         $upperName = ucfirst($visibleName);
 
