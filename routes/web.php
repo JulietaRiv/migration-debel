@@ -859,9 +859,9 @@ Route::get('/newImportprocess', function () {
                                 "lugar" => $aditional_fields[$thumbnailId]['lugar'],
                                 "fecha-inicio" => $aditional_fields[$thumbnailId]['fecha_inicio'],
                                 "fecha-fin" => $aditional_fields[$thumbnailId]['fecha_fin'],
-                                "dimensiones" => $aditional_fields[$thumbnailId]['dimensiones'],
+                                "dimensiones" => strip_tags($aditional_fields[$thumbnailId]['dimensiones']),
                                 "tecnica" => strip_tags($aditional_fields[$thumbnailId]['tecnica']),
-                                "ediciones" => $aditional_fields[$thumbnailId]['ediciones']
+                                "ediciones" => strip_tags($aditional_fields[$thumbnailId]['ediciones'])
                             ]
                         ]; 
                         $post_id = $portfolios_ids ++;
